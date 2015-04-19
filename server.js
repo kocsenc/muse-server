@@ -14,6 +14,10 @@ var accelerometerBuffer = new CBuffer(500);
 var eeg2 = new CBuffer(400);
 var eeg3 = new CBuffer(400);
 var eegSemaphore = false;
+var eegSinging = false;
+
+var saySemaphore = false;
+var curlSemaphore = false;
 
 
 var acc = {
@@ -26,28 +30,38 @@ var acc = {
 
 oscServer.on("message", function (msg, connection_info) {
 	var cmd = msg[0];
-  if(cmd === '/muse/elements/jaw_clench' && !alreadyClench && !alreadyClench) {
+  if(cmd === '/muse/elements/jaw_clench') {
 		if (msg[1] === 1){
 			jawClenched = true;
-			alreadyClench = true;
+			
+			if(!saySemaphore){
+				saySemaphore = true;
+				exec('say fuck off!', function (error, stdout, stderr) {
+				// exec('say My name is Steven Hawking. I cheated on my wife twice, but I am pretty smart', function (error, stdout, stderr) {
+					saySemaphore = false;
+				});
+			}
 
-			exec('say nope.', function (error, stdout, stderr) {
-			// exec('say My name is Steven Hawking. I cheated on my wife twice, but I am pretty smart', function (error, stdout, stderr) {
-
-				alreadyClench= false;
-			});
 			console.log("Bro, you clenching ur jaw");
 		} else {
 			jawClenched = false;
 		}
   }
 
-  if(cmd === '/muse/elements/blink' && !alreadyClench && !alreadyBlink) {
+  if(cmd === '/muse/elements/blink') {
 		if (msg[1] === 1){
-			alreadyBlink = true;
-			exec('say yes', function (error, stdout, stderr) {
-				alreadyBlink = false;
-			});
+			if (!saySemaphore){
+				saySemaphore = true;
+				exec('say yes', function (error, stdout, stderr) {
+					saySemaphore = false;
+				});
+
+				if (!curlSemaphore){
+					curlSemaphore = true;
+			  		exec('curl -X POST http://toggl.io/users/1/tessel/toggle', function (error, stdout, stderr) {curlSemaphore = false;});
+				}
+			}
+
 
 			console.log("BRUH you be BLINK!")
 		}
@@ -67,9 +81,16 @@ oscServer.on("message", function (msg, connection_info) {
   if (cmd === '/muse/eeg'){
   	eeg2.push(msg[2]);
   	eeg3.push(msg[3]);
-  	if(!eegSemaphore){
+  	if(!saySemaphore){
 	  	onLeftifLeft(function(){
 	  		console.log('u looked left');
+	  		if(!saySemaphore){
+	  			saySemaphore = true;
+		  		exec('say I can sing too! && say -v Good potato potato potato potate', function (error, stdout, stderr) {saySemaphore = false;});
+		  		//exec('say -v Whisper Help, get me out of this computer.', function (error, stdout, stderr) {saySemaphore = false;});
+
+	  		}
+	  		
 	  		
 				// http.get("http://toggl-tessel.student.rit.edu", function(res) {
 				// 	console.log("Got response: " + res.statusCode);
@@ -101,36 +122,29 @@ var checkNod = function(value){
 	if (nod.downNod && nod.upNod ){
 		nod.downNod = false;
 		nod.upNod = false;
-		console.log('YOU NODDED YES BRUH');
+		console.log('YOU NODDED YES BRUH!!');
+
+		exec('say absolutely!', function (error, stdout, stderr) {});
+
+
 	} else if (shake.left && shake.right ){
 		shake.left = false;
 		shake.right = false;
 		console.log('YOU NODDED NO BRUH');
 	}
 
-
-
-	// NODDING LEFT?
 	if (value > acc.xaxis.average + 350){
 		if(jawClenched){
-			console.log("left face");
 			shake.right = true;
 		} else{
-			console.log("down nod");
 			nod.downNod = true;	
-		}
-		
+		}		
 	}
 
 	if(value < acc.xaxis.average - 350){
 		if (jawClenched){
-			console.log("right face");
 			shake.right = true;
 		} else {
-			console.log("up nod");
-			exec('say sup!', function (error, stdout, stderr) {
-				alreadyBlink = false;
-			});	
 			nod.upNod = true;	
 		}
 		
